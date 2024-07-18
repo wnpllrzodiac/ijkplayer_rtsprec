@@ -148,6 +148,9 @@ cd android/contrib
 cd ..
 ./compile-ijk.sh all
 
+cd ijkplayer
+docker run --rm -v `pwd`:/project -w /project -v "$HOME/.dockercache/gradle":"/root/.gradle" mingc/android-build-box:latest /bin/bash -c './gradlew clean && ./gradlew assembleRelease'
+
 # Android Studio:
 #     Open an existing Android Studio project
 #     Select android/ijkplayer/ and import
