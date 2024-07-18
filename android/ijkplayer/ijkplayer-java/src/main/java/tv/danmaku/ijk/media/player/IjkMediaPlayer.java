@@ -41,6 +41,7 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
+import android.graphics.Bitmap;
 
 import java.io.FileDescriptor;
 import java.io.FileNotFoundException;
@@ -255,6 +256,12 @@ public final class IjkMediaPlayer extends AbstractMediaPlayer {
      * display surface.
      */
     private native void _setVideoSurface(Surface surface);
+
+    public native int startRecord(String filepath);
+    
+    public native int stopRecord();
+    
+    public native boolean getCurrentFrame(Bitmap bitmap);
 
     /**
      * Sets the {@link SurfaceHolder} to use for displaying the video portion of
