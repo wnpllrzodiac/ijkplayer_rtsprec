@@ -3621,9 +3621,10 @@ static int read_thread(void *arg)
             }
         }
 
-        if (!ffp->is_first && pkt->pts == pkt->dts) { // 获取开始录制前dts等于pts最后的值，用于
+        if (ffp->is_first) { // 获取开始录制前dts等于pts最后的值，用于
             ffp->start_pts = pkt->pts;
             ffp->start_dts = pkt->dts;
+	    av_log(ffp, AV_LOG_ERROR, "start_pts: %lld, start_dts: %lld", pkt->pts, pkt->dts);
         }
         if (ffp->is_record) { // 可以录制时，写入文件
             if (0 != ffp_record_file(ffp, pkt)) {
@@ -5060,6 +5061,7 @@ int ffp_start_record(FFPlayer *ffp, const char *file_name)
     ffp->m_ofmt = NULL;
     ffp->is_record = 0;
     ffp->record_error = 0;
+    ffp->is_first = 1;
 
     if (!file_name || !strlen(file_name)) { // 没有路径
         av_log(ffp, AV_LOG_ERROR, "filename is invalid");
@@ -5194,13 +5196,13 @@ int ffp_record_file(FFPlayer *ffp, AVPacket *packet)
         if (0 == av_packet_ref(pkt, packet)) {
             pthread_mutex_lock(&ffp->record_mutex);
 
-            if (!ffp->is_first) { // 录制的第一帧，时间从0开始
-                ffp->is_first = 1;
-                pkt->pts = 0;
-                pkt->dts = 0;
+            if (ffp->is_first) { // 录制的第一帧，时间从0开始
+                ffp->is_first = 0;
+                //pkt->pts = 0;
+                //pkt->dts = 0;
             } else { // 之后的每一帧都要减去，点击开始录制时的值，这样的时间才是正确的
-                pkt->pts = abs(pkt->pts - ffp->start_pts);
-                pkt->dts = abs(pkt->dts - ffp->start_dts);
+                //pkt->pts = abs(pkt->pts - ffp->start_pts);
+                //pkt->dts = abs(pkt->dts - ffp->start_dts);
             }
 
             in_stream  = is->ic->streams[pkt->stream_index];
@@ -5213,7 +5215,15 @@ int ffp_record_file(FFPlayer *ffp, AVPacket *packet)
             pkt->pos = -1;
 
             // 写入一个AVPacket到输出文件
-            if ((ret = av_interleaved_write_frame(ffp->m_ofmt_ctx, pkt)) < 0) {
+	    //
+	    //write pkt 1
+//2024-07-18 16:47:34.150 24792-25016 IJKMEDIA                sbs.ilovewalk.easyrtsp               E  write pkt 2
+//2024-07-18 16:47:34.150 24792-25016 IJKMEDIA                sbs.ilovewalk.easyrtsp               E  Application provided invalid, non monotonically increasing dts to muxer in stream 1: 632141 >= 631117
+//2024-07-18 16:47:34.150 24792-25016 IJKMEDIA                sbs.ilovewalk.easyrtsp               E  Error muxing packet
+//          Application provided invalid, non monotonically increasing dts to muxer in stream 1: 297584 >= 296560
+            static int pkt_cnt = 0;
+            av_log(ffp, AV_LOG_ERROR, "write pkt %d", pkt_cnt++);
+	    if ((ret = av_interleaved_write_frame(ffp->m_ofmt_ctx, pkt)) < 0) {
                 av_log(ffp, AV_LOG_ERROR, "Error muxing packet\n");
             }
 
@@ -5224,4 +5234,30 @@ int ffp_record_file(FFPlayer *ffp, AVPacket *packet)
         }
     }
     return ret;
+}
+
+void ffp_get_current_frame_l(FFPlayer *ffp, uint8_t *frame_buf)
+{
+  ALOGD("=============>start snapshot\n");
+
+  VideoState *is = ffp->is;
+  Frame *vp;
+  int i = 0, linesize = 0, pixels = 0;
+  uint8_t *src;
+
+  vp = &is->pictq.queue[is->pictq.rindex];
+  int height = vp->bmp->h;
+  int width = vp->bmp->w;
+
+  ALOGD("=============>%d X %d === %d\n", width, height, vp->bmp->pitches[0]);
+
+  // copy data to bitmap in java code
+  linesize = vp->bmp->pitches[0];
+  src = vp->bmp->pixels[0];
+  pixels = width * 4;
+  for (i = 0; i < height; i++) {
+      memcpy(frame_buf + i * pixels, src + i * linesize, pixels);
+  }
+
+  ALOGD("=============>end snapshot\n");
 }
