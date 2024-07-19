@@ -1225,6 +1225,7 @@ static JNINativeMethod g_methods[] = {
     { "getCurrentFrame", "(Landroid/graphics/Bitmap;)Z", (void *) IjkMediaPlayer_getCurrentFrame },
     { "startRecord",            "(Ljava/lang/String;)I",      (void *) IjkMediaPlayer_startRecord },
     { "stopRecord",             "()I",      (void *) IjkMediaPlayer_stopRecord },
+    { "getRecordDuration",      "()I",      (void *) IjkMediaPlayer_getRecordDuration }, 
 
     { "_release",               "()V",      (void *) IjkMediaPlayer_release },
     { "_reset",                 "()V",      (void *) IjkMediaPlayer_reset },
