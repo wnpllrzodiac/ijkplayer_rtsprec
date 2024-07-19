@@ -3621,10 +3621,11 @@ static int read_thread(void *arg)
             }
         }
 
-        if (ffp->is_first) { // 获取开始录制前dts等于pts最后的值，用于
+        if (ffp->is_first && pkt->stream_index == is->video_stream) { // 获取开始录制前dts等于pts最后的值，用于
             ffp->start_pts = pkt->pts;
             ffp->start_dts = pkt->dts;
-	    av_log(ffp, AV_LOG_ERROR, "start_pts: %lld, start_dts: %lld", pkt->pts, pkt->dts);
+            ffp->is_first = 0;
+	        av_log(ffp, AV_LOG_ERROR, "start_pts: %lld, start_dts: %lld", pkt->pts, pkt->dts);
         }
         if (ffp->is_record) { // 可以录制时，写入文件
             if (0 != ffp_record_file(ffp, pkt)) {
@@ -5062,6 +5063,7 @@ int ffp_start_record(FFPlayer *ffp, const char *file_name)
     ffp->is_record = 0;
     ffp->record_error = 0;
     ffp->is_first = 1;
+    ffp->last_pts = -1;
 
     if (!file_name || !strlen(file_name)) { // 没有路径
         av_log(ffp, AV_LOG_ERROR, "filename is invalid");
@@ -5178,7 +5180,17 @@ int ffp_stop_record(FFPlayer *ffp)
 int ffp_get_record_duration(FFPlayer *ffp)
 {
     assert(ffp);
-    return 0;
+    VideoState *is = ffp->is;
+    if (ffp->last_pts == -1)
+        return 0;
+    
+    int64_t duration = ffp->last_pts - ffp->start_pts;
+    AVRational msec_timebase = {1, 1000};
+    AVStream *in_stream  = is->ic->streams[is->video_stream];
+    int64_t msec_duration = av_rescale_q(
+        duration, in_stream->time_base, msec_timebase);
+    av_log(ffp, AV_LOG_ERROR, "rec duration: %lld", msec_duration);
+    return msec_duration;
 }
 
 //保存文件
@@ -5203,7 +5215,7 @@ int ffp_record_file(FFPlayer *ffp, AVPacket *packet)
             pthread_mutex_lock(&ffp->record_mutex);
 
             if (ffp->is_first) { // 录制的第一帧，时间从0开始
-                ffp->is_first = 0;
+                //ffp->is_first = 0;
                 //pkt->pts = 0;
                 //pkt->dts = 0;
             } else { // 之后的每一帧都要减去，点击开始录制时的值，这样的时间才是正确的
@@ -5213,6 +5225,10 @@ int ffp_record_file(FFPlayer *ffp, AVPacket *packet)
 
             in_stream  = is->ic->streams[pkt->stream_index];
             out_stream = ffp->m_ofmt_ctx->streams[pkt->stream_index];
+
+            if (pkt->stream_index == ffp->video_stream) {
+                ffp->last_pts = pkt->pts;
+            }
 
             // 转换PTS/DTS
             pkt->pts = av_rescale_q_rnd(pkt->pts, in_stream->time_base, out_stream->time_base, (AV_ROUND_NEAR_INF | AV_ROUND_PASS_MINMAX));
