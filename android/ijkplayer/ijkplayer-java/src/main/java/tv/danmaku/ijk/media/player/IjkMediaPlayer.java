@@ -260,6 +260,8 @@ public final class IjkMediaPlayer extends AbstractMediaPlayer {
     public native int startRecord(String filepath);
     
     public native int stopRecord();
+
+    public native int getRecordDuration();
     
     public native boolean getCurrentFrame(Bitmap bitmap);
 

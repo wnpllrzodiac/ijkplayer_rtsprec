@@ -819,6 +819,17 @@ int ijkmp_stop_record(IjkMediaPlayer *mp)
     return retval;
 }
 
+int ijkmp_get_record_duration(IjkMediaPlayer *mp)
+{
+    assert(mp);
+    MPTRACE("ijkmp_get_record_duration()\n");
+    pthread_mutex_lock(&mp->mutex);
+    int retval = ffp_get_record_duration(mp->ffplayer);
+    pthread_mutex_unlock(&mp->mutex);
+    MPTRACE("ijkmp_get_record_duration()=%d\n", retval);
+    return retval;
+}
+
 static void ijkmp_get_current_frame_l(IjkMediaPlayer *mp, uint8_t *frame_buf)
 {
   ffp_get_current_frame_l(mp->ffplayer, frame_buf);

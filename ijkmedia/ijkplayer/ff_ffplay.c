@@ -5175,6 +5175,12 @@ int ffp_stop_record(FFPlayer *ffp)
     return 0;
 }
 
+int ffp_get_record_duration(FFPlayer *ffp)
+{
+    assert(ffp);
+    return 0;
+}
+
 //保存文件
 int ffp_record_file(FFPlayer *ffp, AVPacket *packet)
 {
@@ -5222,7 +5228,7 @@ int ffp_record_file(FFPlayer *ffp, AVPacket *packet)
 //2024-07-18 16:47:34.150 24792-25016 IJKMEDIA                sbs.ilovewalk.easyrtsp               E  Error muxing packet
 //          Application provided invalid, non monotonically increasing dts to muxer in stream 1: 297584 >= 296560
             static int pkt_cnt = 0;
-            av_log(ffp, AV_LOG_ERROR, "write pkt %d", pkt_cnt++);
+            //av_log(ffp, AV_LOG_ERROR, "write pkt %d", pkt_cnt++);
 	    if ((ret = av_interleaved_write_frame(ffp->m_ofmt_ctx, pkt)) < 0) {
                 av_log(ffp, AV_LOG_ERROR, "Error muxing packet\n");
             }

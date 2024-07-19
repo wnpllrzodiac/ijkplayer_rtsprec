@@ -416,6 +416,20 @@ LABEL_RETURN:
     return retval;
 }
 
+static jint
+IjkMediaPlayer_getRecordDuration(JNIEnv *env, jobject thiz)
+{
+    jint retval = -1;
+    IjkMediaPlayer *mp = jni_get_media_player(env, thiz);
+    JNI_CHECK_GOTO(mp, env, NULL, "mpjni: getRecordDuration: null mp", LABEL_RETURN);
+
+    retval = ijkmp_get_record_duration(mp);
+
+LABEL_RETURN:
+    ijkmp_dec_ref_p(&mp);
+    return retval;
+}
+
 static void
 IjkMediaPlayer_release(JNIEnv *env, jobject thiz)
 {
