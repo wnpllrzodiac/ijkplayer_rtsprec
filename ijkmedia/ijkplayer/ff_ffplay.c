@@ -5226,7 +5226,7 @@ int ffp_record_file(FFPlayer *ffp, AVPacket *packet)
             in_stream  = is->ic->streams[pkt->stream_index];
             out_stream = ffp->m_ofmt_ctx->streams[pkt->stream_index];
 
-            if (pkt->stream_index == ffp->video_stream) {
+            if (pkt->stream_index == is->video_stream) {
                 ffp->last_pts = pkt->pts;
             }
 
