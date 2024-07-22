@@ -5064,6 +5064,7 @@ int ffp_start_record(FFPlayer *ffp, const char *file_name)
     ffp->record_error = 0;
     ffp->is_first = 1;
     ffp->last_pts = -1;
+    ffp->is_keyframe = 0;
 
     if (!file_name || !strlen(file_name)) { // 没有路径
         av_log(ffp, AV_LOG_ERROR, "filename is invalid");
@@ -5209,6 +5210,22 @@ int ffp_record_file(FFPlayer *ffp, AVPacket *packet)
             return -1;
         }
 
+        in_stream  = is->ic->streams[pkt->stream_index];
+        out_stream = ffp->m_ofmt_ctx->streams[pkt->stream_index];
+
+        if (!is->is_keyframe) {
+            if (in_stream->codec->codec_type != AVMEDIA_TYPE_VIDEO) {
+                return 0;
+            }
+            else if (packet->flags & AV_PKT_FLAG_KEY == 0) {
+                av_log(ffp, AV_LOG_ERROR, "skip non-keyframe");
+                return 0;
+            }
+
+            is->is_keyframe = 1;
+            av_log(ffp, AV_LOG_ERROR, "found 1st key frame");
+        }
+
         AVPacket *pkt = (AVPacket *)av_malloc(sizeof(AVPacket)); // 与看直播的 AVPacket分开，不然卡屏
         av_new_packet(pkt, 0);
         if (0 == av_packet_ref(pkt, packet)) {
@@ -5222,9 +5239,6 @@ int ffp_record_file(FFPlayer *ffp, AVPacket *packet)
                 //pkt->pts = abs(pkt->pts - ffp->start_pts);
                 //pkt->dts = abs(pkt->dts - ffp->start_dts);
             }
-
-            in_stream  = is->ic->streams[pkt->stream_index];
-            out_stream = ffp->m_ofmt_ctx->streams[pkt->stream_index];
 
             if (pkt->stream_index == is->video_stream) {
                 ffp->last_pts = pkt->pts;

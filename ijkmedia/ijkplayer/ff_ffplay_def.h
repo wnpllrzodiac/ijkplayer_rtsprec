@@ -729,6 +729,7 @@ typedef struct FFPlayer {
     int record_error;
 
     int is_first;                       // 第一帧数据
+    int is_keyframe;                    // video first I frame
     int64_t start_pts;                  // 开始录制时pts
     int64_t start_dts;                  // 开始录制时dts
     int64_t last_pts;
