@@ -5210,10 +5210,10 @@ int ffp_record_file(FFPlayer *ffp, AVPacket *packet)
             return -1;
         }
 
-        in_stream  = is->ic->streams[pkt->stream_index];
-        out_stream = ffp->m_ofmt_ctx->streams[pkt->stream_index];
+        in_stream  = is->ic->streams[packet->stream_index];
+        out_stream = ffp->m_ofmt_ctx->streams[packet->stream_index];
 
-        if (!is->is_keyframe) {
+        if (!ffp->is_keyframe) {
             if (in_stream->codec->codec_type != AVMEDIA_TYPE_VIDEO) {
                 return 0;
             }
@@ -5222,7 +5222,7 @@ int ffp_record_file(FFPlayer *ffp, AVPacket *packet)
                 return 0;
             }
 
-            is->is_keyframe = 1;
+            ffp->is_keyframe = 1;
             av_log(ffp, AV_LOG_ERROR, "found 1st key frame");
         }
 
